@@ -6,8 +6,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Rowdies:wght@300;400;700&display=swap&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
   <link rel="stylesheet" type="text/css" href="/static/style.css"></link>
   <script>
-    WATCH_PARTY_USER_ID = "{{ user.id }}";
-    WATCH_PARTY_API_KEY = "{{ user.api_key }}";
+    const WATCH_PARTY_USER_ID = "{{ user_id }}";
+    const WATCH_PARTY_API_KEY = "{{ api_key }}";
   </script>
   <script src="/static/script.js"></script>
 </head>
@@ -41,7 +41,7 @@
     <div class="comment_box">
       <form>
         <label for="comment">What do you have to say?</label>
-        <textarea name="comment"></textarea>
+        <textarea id="comment" name="comment"></textarea>
         <button type="submit" value="Post">Post</button>
       </form>
     </div>

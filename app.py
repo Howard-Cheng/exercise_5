@@ -16,6 +16,11 @@ app.debug = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 
+@app.errorhandler(500)
+def internal_server_error(e):
+    return jsonify(error=str(e)), 500
+
+
 @app.after_request
 def add_header(response):
     response.headers["Cache-Control"] = "no-cache"
@@ -150,24 +155,23 @@ def profile():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    print("login")
-    user = get_user_from_cookie(request)
-
-    if user:
-        return redirect('/')
-
     if request.method == 'POST':
-        name = request.form['name']
-        password = request.form['name']
-        u = query_db('select * from users where name = ? and password = ?',
-                     [name, password], one=True)
-        if user:
-            resp = make_response(redirect("/"))
-            resp.set_cookie('user_id', u.id)
-            resp.set_cookie('user_password', u.password)
-            return resp
+        # Correctly retrieve the username and password from the form
+        username = request.form['username']
+        password = request.form['password']
+        user = query_db(
+            'select * from users where name = ? and password = ?', [username, password], one=True)
 
-    return render_with_error_handling('login.html', failed=True)
+        if user:
+            # Proceed with login success actions, such as setting cookies
+            resp = make_response(redirect("/profile"))
+            resp.set_cookie('user_id', str(user['id']))
+            resp.set_cookie('user_password', user['password'])
+            return resp
+        else:
+            # Handle login failure
+            return render_with_error_handling('login.html', failed=True)
+    return render_with_error_handling('login.html')
 
 
 @app.route('/logout')
@@ -182,16 +186,20 @@ def logout():
 def room(room_id):
     user = get_user_from_cookie(request)
     if user is None:
-        return redirect('/')
+        return redirect('/login')
 
     room = query_db('select * from rooms where id = ?', [room_id], one=True)
-    return render_with_error_handling('room.html',
-                                      room=room, user=user)
+    if room is None:
+        # Handle the case where the room does not exist
+        return "Room not found", 404
+
+    # Pass the user_id and api_key to the template
+    return render_with_error_handling('room.html', room=room, user=user, user_id=user['id'], api_key=user['api_key'])
+
 
 # -------------------------------- API ROUTES ----------------------------------
 
 # POST to change the user's name
-
 
 @app.route('/api/user/name', methods=['POST'])
 def update_username():
@@ -201,6 +209,7 @@ def update_username():
         return jsonify({'error': 'Authentication required.'}), 403
 
     new_name = request.json.get('name')
+
     if not new_name:
         app.logger.error('New username required.')
         return jsonify({'error': 'New username required.'}), 400
@@ -280,15 +289,18 @@ def post_message(room_id):
     if not user:
         return jsonify({'error': 'Authentication required.'}), 403
 
-    message_text = request.json.get('text')
+    message_text = request.json.get('body')
     if not message_text:
         return jsonify({'error': 'Message text required.'}), 400
 
     try:
         db = get_db()
+        print(
+            f"Inserting message for room_id: {room_id}, user_id: {user['id']}, message: {message_text}")
         db.execute('INSERT INTO messages (room_id, user_id, body) VALUES (?, ?, ?)',
                    (room_id, user['id'], message_text))
         db.commit()
         return jsonify({'success': True}), 200
-    except sqlite3.Error as e:
-        return jsonify({'error': 'Database error.', 'message': str(e)}), 500
+    except Exception as e:
+        print(f"Error inserting message: {e}")
+        return jsonify({'error': 'Database operation failed.', 'message': str(e)}), 500

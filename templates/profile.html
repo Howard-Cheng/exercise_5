@@ -7,10 +7,8 @@
   <link rel="stylesheet" type="text/css" href="/static/style.css"></link>
   <script src="/static/script.js"></script>
   <script>
-    {% if user %}
-    WATCH_PARTY_USER_ID = {{ user.id }};
-    WATCH_PARTY_API_KEY = '{{ user.api_key }}';
-    {% endif %}
+    const WATCH_PARTY_USER_ID = "{{ user_id }}";
+    const WATCH_PARTY_API_KEY = "{{ api_key }}";
   </script>
 </head>
 <body>

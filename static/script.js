@@ -7,22 +7,25 @@
 
 // Global variables to store room and user information
 const roomId = 1; // This should be dynamically set based on the room the user is in
-const api_key = "your_api_key"; // This should be obtained from a secure source
+const api_key = WATCH_PARTY_API_KEY; // This should be obtained from a secure source
 
 // Fetch the list of existing chat messages.
 function getMessages() {
     fetch(`/api/messages/${roomId}`, {
-        headers: { "X-API-Key": api_key },
+        headers: { "X-API-Key": WATCH_PARTY_API_KEY },
     })
         .then((response) => response.json())
         .then((messages) => {
             const messagesContainer = document.getElementById("messages");
-            messagesContainer.innerHTML = ""; // Clear existing messages
-            messages.forEach((message) => {
-                const messageElement = document.createElement("div");
-                messageElement.textContent = message.body; // Updated from message.text to message.body
-                messagesContainer.appendChild(messageElement);
-            });
+            if (messagesContainer !== null) {
+                // Ensure the element exists
+                messagesContainer.innerHTML = ""; // Clear existing messages
+                messages.forEach((message) => {
+                    const messageElement = document.createElement("div");
+                    messageElement.textContent = message.body; // Assume 'body' is the correct key
+                    messagesContainer.appendChild(messageElement);
+                });
+            }
         })
         .catch((error) => console.error("Error fetching messages:", error));
 }
