@@ -197,19 +197,23 @@ def room(room_id):
 def update_username():
     user = get_user_from_cookie(request)
     if not user:
+        app.logger.error('Authentication required.')
         return jsonify({'error': 'Authentication required.'}), 403
 
     new_name = request.json.get('name')
     if not new_name:
+        app.logger.error('New username required.')
         return jsonify({'error': 'New username required.'}), 400
 
     try:
         db = get_db()
+        app.logger.info(f'Updating user {user["id"]} name to {new_name}')
         db.execute('UPDATE users SET name = ? WHERE id = ?',
                    (new_name, user['id']))
         db.commit()
         return jsonify({'success': True})
     except sqlite3.Error as e:
+        app.logger.error(f'Database error: {str(e)}')
         return jsonify({'error': 'Database error.', 'message': str(e)}), 500
 
 # POST to change the user's password
@@ -262,8 +266,8 @@ def get_messages(room_id):
     try:
         db = get_db()
         messages = db.execute(
-            'SELECT * FROM messages WHERE room_id = ?', (room_id,)).fetchall()
-        return jsonify([{'id': msg['id'], 'text': msg['text']} for msg in messages])
+            'SELECT id, body FROM messages WHERE room_id = ?', (room_id,)).fetchall()
+        return jsonify([{'id': msg['id'], 'body': msg['body']} for msg in messages])
     except sqlite3.Error as e:
         return jsonify({'error': 'Database error.', 'message': str(e)}), 500
 
@@ -282,9 +286,9 @@ def post_message(room_id):
 
     try:
         db = get_db()
-        db.execute('INSERT INTO messages (room_id, user_id, text) VALUES (?, ?, ?)',
+        db.execute('INSERT INTO messages (room_id, user_id, body) VALUES (?, ?, ?)',
                    (room_id, user['id'], message_text))
         db.commit()
-        return jsonify({'success': True})
+        return jsonify({'success': True}), 200
     except sqlite3.Error as e:
         return jsonify({'error': 'Database error.', 'message': str(e)}), 500

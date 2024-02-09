@@ -20,7 +20,7 @@ function getMessages() {
             messagesContainer.innerHTML = ""; // Clear existing messages
             messages.forEach((message) => {
                 const messageElement = document.createElement("div");
-                messageElement.textContent = message.text;
+                messageElement.textContent = message.body; // Updated from message.text to message.body
                 messagesContainer.appendChild(messageElement);
             });
         })
@@ -35,9 +35,14 @@ function postMessage(messageText) {
             "Content-Type": "application/json",
             "X-API-Key": api_key,
         },
-        body: JSON.stringify({ text: messageText }),
+        body: JSON.stringify({ body: messageText }),
     })
-        .then((response) => response.json())
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok " + response.statusText);
+            }
+            return response.json();
+        })
         .then((result) => {
             if (result.success) {
                 getMessages(); // Refresh messages
